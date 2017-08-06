@@ -1,5 +1,6 @@
 # Fail Node Test
 1024개의 노드에 대한 Failover 성능 테스트 수행 결과. Fail node를 0, 2, 4, 8, 16, 32, 64, 128, 256, 512 로 늘려가면서 테스트 했다. Fail node가 늘어날 수록 백업노드를 찾는데, 더 많은 시간이 걸릴 것이므로 초당 처리 갯수가 줄어들 것으로 예상 할 수 있다.  
+
 Fail Node Num  | Request/Sec
 ---------------|-------------
 0              | 42509.43
@@ -12,4 +13,5 @@ Fail Node Num  | Request/Sec
 128            | 42186.87
 256            | 41680.17
 512            | 41901.22
+
 ![](/result/request_failover_1024.png)
