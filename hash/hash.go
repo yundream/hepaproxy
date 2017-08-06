@@ -46,17 +46,14 @@ func (h Hash) GetNodeMulti(key uint64) int32 {
 }
 
 func (h Hash) GetNode(key uint64) int32 {
-	/*
-		for {
-			n := jump.Hash(key, h.nodeSize)
-			n = n + h.offset
-			if _, ok := h.failNode[int(n)]; !ok {
-				return n
-			}
-			//fmt.Println("This is Fail Node ", n)
-			key++
+	for {
+		n := jump.Hash(key, h.nodeSize)
+		n = n + h.offset
+		if _, ok := h.failNode[int(n)]; !ok {
+			return n
 		}
-	*/
+		key++
+	}
 	return 1
 }
 

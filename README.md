@@ -1,7 +1,21 @@
 # Failover 알고리즘 변경
-* Key+1.. 예상과 달리 분산이 잘 되지 않는다.
+* Key+1.. 예상과 달리 분산이 잘 되지 않는다. **왜 이런 문제가 발생하는가?**
 * 별도의 랜덤 공간을 만들어서, 여기에서 Backup 노드를 선택했다. 
 ```golang
+// 원래 계획
+func (h Hash) GetNode(key uint64) int32 {
+	for {
+		n := jump.Hash(key, h.nodeSize)
+		n = n + h.offset
+		if _, ok := h.failNode[int(n)]; !ok {
+			return n
+		}
+		key++
+	}
+	return 1
+}
+
+// 수정
 func (h Hash) GetBackUpNode(key uint64) int32 {
 	r := rand.New(rand.NewSource(int64(key)))
 	pivot := r.Int63n(20481)
