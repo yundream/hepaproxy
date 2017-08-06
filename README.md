@@ -15,3 +15,5 @@ Fail Node Num  | Request/Sec
 512            | 41901.22
 
 ![](/result/request_failover_1024.png)
+* 테스트는 HTTP 서버, 클라이언트 방식으로 진행했다.  
+* HTTP Request, 네트워크 연산에 비해서 CPU 연산이 무시 할 만큼 작기 때문에, Fail Node가 증가해서 연산이 늘어남에도 불구하고 Request/Sec는 차이가 없었다.

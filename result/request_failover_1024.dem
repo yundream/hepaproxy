@@ -1,4 +1,5 @@
-set yrange[0:60000]
+set yrange[0:80000]
 set xlabel "fail node #"
-plot "request_failover_1024.dat"  using 1:2 title 'Request/Sec' with line 
+plot "request_failover_1024.dat"  using 1:2 title '4thread'  with line, \
+	 "request_failover_1024.dat"  using 1:3 title '16thread' with line
 pause -1
