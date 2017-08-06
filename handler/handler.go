@@ -2,10 +2,8 @@ package handler
 
 import (
 	"bitbucket.org/dream_yun/hepaProxy/hash"
-	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 )
@@ -16,6 +14,7 @@ type Handler struct {
 	insCount int
 	count    []int
 	offset   int32
+	scale    int
 }
 
 func New() *Handler {
@@ -26,12 +25,16 @@ func (h Handler) Router() *mux.Router {
 	return h.router
 }
 func (h *Handler) Regist() {
+	h.count = make([]int, 2048)
 	h.router = mux.NewRouter()
 	h.router.HandleFunc("/node/scale/{scale}/{offset}", h.ScaleNode).Methods("PUT", "POST")
 	h.router.HandleFunc("/node/fail", h.FailNode).Methods("PUT", "POST")
+	h.router.HandleFunc("/node/fail/{node}", h.FailNodeAdd).Methods("PUT")
+	h.router.HandleFunc("/node/fail/{from}/{to}", h.FailNoadAddRange).Methods("PUT")
 	h.router.HandleFunc("/message/{from}/{to}", h.SendMessage).Methods("POST")
 	h.router.HandleFunc("/message", h.RecvMessage).Methods("POST")
 	h.router.HandleFunc("/count", h.GetCount).Methods("GET")
+	h.router.HandleFunc("/count", h.DelCount).Methods("DELETE")
 }
 
 func (h *Handler) ScaleNode(w http.ResponseWriter, r *http.Request) {
@@ -44,54 +47,66 @@ func (h *Handler) ScaleNode(w http.ResponseWriter, r *http.Request) {
 	}
 	h.jump.Offset(int32(offset))
 	h.jump.SetNodeSize(int32(scale))
-	h.count = make([]int, scale+1)
+	h.scale = scale
 	h.offset = int32(offset)
 	fmt.Fprintf(w, "%d ~ %d", offset, offset+int(scale)-1)
 }
 
+func (h *Handler) FailNodeAdd(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	n := vars["node"]
+	noden, _ := strconv.Atoi(n)
+	h.jump.AddFailNode(noden)
+	//node := h.jump.GetFailNode()
+}
+
+func (h *Handler) FailNoadAddRange(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	froms := vars["from"]
+	tos := vars["to"]
+	from, _ := strconv.Atoi(froms)
+	to, _ := strconv.Atoi(tos)
+	h.jump.AddFailRange(from, to)
+}
+
 func (h *Handler) FailNode(w http.ResponseWriter, r *http.Request) {
-	data, err := ioutil.ReadAll(r.Body)
-	var a []int
-	json.Unmarshal(data, &a)
-	if err != nil {
-		w.Write([]byte("ERROR"))
-		return
-	}
-	h.jump.SetFailNode(a)
-	node := h.jump.GetFailNode()
-	fmt.Fprintf(w, "Fail Node : %#v\n", node)
+	/*
+		data, err := ioutil.ReadAll(r.Body)
+		var a []int
+		json.Unmarshal(data, &a)
+		if err != nil {
+			w.Write([]byte("ERROR"))
+			return
+		}
+		h.jump.SetFailNode(a)
+		node := h.jump.GetFailNode()
+		fmt.Fprintf(w, "Fail Node : %#v\n", node)
+	*/
 }
 
 func (h *Handler) RecvMessage(w http.ResponseWriter, r *http.Request) {
 	h.insCount++
 	if h.insCount%100 == 0 {
-		fmt.Println("Read Message ", h.count)
+		fmt.Println("Read Message ", h.insCount)
 	}
 }
 
 func (h *Handler) GetCount(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Count : %#v\n", h.count)
+	fmt.Fprintf(w, "Count : %#v\n", h.count[:h.scale])
+}
+
+func (h *Handler) DelCount(w http.ResponseWriter, r *http.Request) {
+	h.count = make([]int, h.scale+1)
 }
 
 func (h *Handler) SendMessage(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	to := vars["to"]
-	fmt.Println("To : ", to)
 	keyTo, err := strconv.ParseUint(to, 10, 64)
 	if err != nil {
 		w.Write([]byte(err.Error()))
 		return
 	}
-	node := h.jump.GetNode(keyTo)
-	resp, err := http.Post(fmt.Sprintf("http://localhost:%d/message", node), "text/plain", nil)
-	if err != nil {
-		w.Write([]byte(err.Error()))
-		return
-	}
-	if resp.StatusCode != http.StatusOK {
-		fmt.Fprintf(w, "SendMessageFail : %d node %d\n", node, resp.StatusCode)
-		return
-	}
-	h.count[node-h.offset]++
-	fmt.Fprintf(w, "SendMessage : %d node", node)
+	node := h.jump.GetNodeMulti(keyTo)
+	h.count[node]++
 }

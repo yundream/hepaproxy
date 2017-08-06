@@ -1,0 +1,4 @@
+set yrange[0:60000]
+set xlabel "fail node #"
+plot "request_failover_1024.dat"  using 1:2 title 'Request/Sec' with line 
+pause -1

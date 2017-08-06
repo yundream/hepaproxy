@@ -3,42 +3,61 @@ package hash
 import (
 	"fmt"
 	jump "github.com/renstrom/go-jump-consistent-hash"
+	"math/rand"
 )
 
 type Hash struct {
 	nodeSize int32
 	offset   int32
-	failNode map[int]int
+	failNode []int
 }
 
 func New(node int32) *Hash {
-	return &Hash{nodeSize: node, failNode: make(map[int]int)}
+	return &Hash{nodeSize: node, failNode: make([]int, 1024)}
 }
 
-func (h *Hash) SetFailNode(node []int) {
-	for k := range h.failNode {
-		delete(h.failNode, k)
-	}
-	for _, v := range node {
-		h.failNode[v] = 1
+func (h *Hash) AddFailNode(node int) {
+	h.failNode[node] = 1
+	fmt.Printf("%#v\n", h.failNode)
+}
+
+func (h *Hash) AddFailRange(from int, to int) {
+	for i := from; i < to; i++ {
+		h.failNode[i] = 1
 	}
 }
 
-func (h Hash) GetFailNode() map[int]int {
+func (h Hash) GetFailNode() []int {
 	return h.failNode
 }
 
-func (h Hash) GetNode(key uint64) int32 {
+func (h Hash) GetNodeMulti(key uint64) int32 {
+	r := rand.New(rand.NewSource(int64(key)))
+	pivot := r.Int63n(20481)
 	for {
 		n := jump.Hash(key, h.nodeSize)
 		n = n + h.offset
-		fmt.Println("N:", n)
-		if _, ok := h.failNode[int(n)]; !ok {
+		if h.failNode[int(n)] == 0 {
 			return n
 		}
-		fmt.Println("This is Fail Node ", n)
-		key++
+		key = uint64(pivot)
+		pivot = r.Int63n(20481)
 	}
+}
+
+func (h Hash) GetNode(key uint64) int32 {
+	/*
+		for {
+			n := jump.Hash(key, h.nodeSize)
+			n = n + h.offset
+			if _, ok := h.failNode[int(n)]; !ok {
+				return n
+			}
+			//fmt.Println("This is Fail Node ", n)
+			key++
+		}
+	*/
+	return 1
 }
 
 func (h *Hash) SetNodeSize(node int32) {
