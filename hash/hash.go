@@ -45,6 +45,9 @@ func (h Hash) GetNodeMulti(key uint64) int32 {
 	}
 }
 
+func (h Hash) GetNodeRedis(key uint64) int32 {
+}
+
 func (h Hash) GetNode(key uint64) int32 {
 	for {
 		n := jump.Hash(key, h.nodeSize)

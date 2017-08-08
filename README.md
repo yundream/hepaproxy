@@ -59,6 +59,15 @@ Fail Node Num  | 4 thread      | 16 thread
 ## Connection Table을 유지하는 모델
 ![](https://docs.google.com/drawings/d/1zn5uTmy2_MUP2UF5hSoq8krKPDkIkppTh0bUHgGSHzw/pub?w=780&h=572)
 
+노드가 실패 할 경우, 실패한 노드로 향하는 어뎁터 연결은 RoundRobin 방식으로 다른 노드에 할당한다. 이때, Connection table에 **Key -> node**에 기록한다. 이 후 Fail 노드로 향하는 메시지는 Connection table을 조회해서 메시지를 전송한다. 아래의 문제를 예상 할 수 있다. 
+ 1. 메시지 경로 설정에 대한 성능은 '''네트워크'''에 좌우된다.  
+ 1. Connection Table을 유지 할 경우, 네트워크를 경유해야 한다.
+ 1. 중앙에 집중된 Connection Table은 Fail point다. 
+
+테스트 방법
+ 1. Connection table은 Redis로 유지한다.  
+ 1. 미래 1,000,000개의 테이블을 등록한다. 
+ 1. 노드가 실패하면 1,000,000개의 테이블에서 key로 찾는다.
 ## 추가작업 
 1. 일반방식 추가 : connection table 유지 
 1. 나머지 3개는 : connection table 유지 할 필요 없음. : CPU Usage & 표준편차

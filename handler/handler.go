@@ -99,6 +99,18 @@ func (h *Handler) DelCount(w http.ResponseWriter, r *http.Request) {
 	h.count = make([]int, h.scale+1)
 }
 
+func (h *Handler) SendMessageRedis(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	to := vars["to"]
+	keyTo, err := strconv.ParseUint(to, 10, 64)
+	if err != nil {
+		w.Write([]byte(err.Error()))
+		return
+	}
+	node := h.jump.GetNodeMulti(keyTo)
+	h.count[node]++
+}
+
 func (h *Handler) SendMessage(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	to := vars["to"]
