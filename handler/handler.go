@@ -3,6 +3,7 @@ package handler
 import (
 	"bitbucket.org/dream_yun/hepaProxy/hash"
 	"fmt"
+	"github.com/go-redis/redis"
 	"github.com/gorilla/mux"
 	"net/http"
 	"strconv"
@@ -15,10 +16,26 @@ type Handler struct {
 	count    []int
 	offset   int32
 	scale    int
+	redisCli *redis.Client
 }
 
 func New() *Handler {
-	return &Handler{jump: hash.New(10)}
+	redisCli := redis.NewClient(&redis.Options{
+		Addr: "127.0.0.1:6379",
+	})
+	_, err := redisCli.Ping().Result()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("key set")
+	/*
+		for i := 0; i < 1000000; i++ {
+			is := strconv.Itoa(i)
+			redisCli.Set(is, 1, 0)
+		}
+	*/
+	fmt.Println("henalder start")
+	return &Handler{jump: hash.New(10, redisCli), redisCli: redisCli}
 }
 
 func (h Handler) Router() *mux.Router {
@@ -32,6 +49,7 @@ func (h *Handler) Regist() {
 	h.router.HandleFunc("/node/fail/{node}", h.FailNodeAdd).Methods("PUT")
 	h.router.HandleFunc("/node/fail/{from}/{to}", h.FailNoadAddRange).Methods("PUT")
 	h.router.HandleFunc("/message/{from}/{to}", h.SendMessage).Methods("POST")
+	h.router.HandleFunc("/message/redis/{from}/{to}", h.SendMessageToRedis).Methods("POST")
 	h.router.HandleFunc("/message", h.RecvMessage).Methods("POST")
 	h.router.HandleFunc("/count", h.GetCount).Methods("GET")
 	h.router.HandleFunc("/count", h.DelCount).Methods("DELETE")
@@ -99,7 +117,7 @@ func (h *Handler) DelCount(w http.ResponseWriter, r *http.Request) {
 	h.count = make([]int, h.scale+1)
 }
 
-func (h *Handler) SendMessageRedis(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) SendMessageToRedis(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	to := vars["to"]
 	keyTo, err := strconv.ParseUint(to, 10, 64)
@@ -107,7 +125,7 @@ func (h *Handler) SendMessageRedis(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(err.Error()))
 		return
 	}
-	node := h.jump.GetNodeMulti(keyTo)
+	node := h.jump.GetNodeRedis(keyTo)
 	h.count[node]++
 }
 
