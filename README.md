@@ -56,6 +56,25 @@ Fail Node Num  | 4 thread      | 16 thread  | 16 thread, Redis
 * HTTP Request, 네트워크 연산에 비해서 CPU 연산이 무시 할 만큼 작기 때문에, Fail Node가 증가해서 연산이 늘어남에도 불구하고 Request/Sec는 차이가 없었다.
 * **표준편차를 넣어야 할 것 같다.**
 
+## Fail node test-2. node를 64개로 제한
+제한한 이유는 다음과 같다.
+ 1. 현실적으로 1024개 정도의 노드를 하나의 클러스터로 구성하지는 않을 것이다.
+ 1. 좀 더 현실적인 환경을 위해서 Node를 64개로 제한했다.
+ 1. 노드의 갯수가 줄어든 상태에서 실패가 발생하는 경우, connection table를 참고하는 모델은 분모가 작기 때문에 성능하락이 좀 더 명확히 눈에 보일 것이고, Hepa 모델의 장점은 좀더 눈에 띌 것이다. 
+Fail Node Num  | 16 thread  | 16 thread, Redis
+---------------|------------|------------------
+0              | 71280.74   |  69527.45
+4              | 71059.19   |  69379.63
+8              | 70631.93   |  53117.25
+12             | 68611.25   |  45551.25
+16             | 67119.63   |  38893.48
+20             | 66178.63   |  34417.78
+24             | 65151.12   |  31435.78
+28             | 63937.12   |  28746.21
+32             | 62988.31   |  26623.65
+
+![](/result/request_failover_64.png)
+
 ## Connection Table을 유지하는 모델
 ![](https://docs.google.com/drawings/d/1zn5uTmy2_MUP2UF5hSoq8krKPDkIkppTh0bUHgGSHzw/pub?w=780&h=572)
 
